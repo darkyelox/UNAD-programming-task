@@ -20,6 +20,24 @@ class ExceptionsLoggerHandler(BaseExceptionHandler):
         file_handler.setFormatter(formatter)
 
         # sets the file handler to the logger
+        import logging
+
+
+class ExceptionsLogger:
+
+    @staticmethod
+    def configurar_logger():
+
+        logging.basicConfig(
+            filename="logs.txt",
+            level=logging.ERROR,
+            format="%(asctime)s - %(levelname)s - %(message)s"
+        )
+
+    @staticmethod
+    def registrar_error(error):
+
+        logging.error(error)
         self.logger.addHandler(file_handler)
 
     # Handles the error so no exception is thrown but is logged to a file
