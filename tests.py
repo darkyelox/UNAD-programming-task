@@ -1,4 +1,4 @@
-from exceptions_logger import ExceptionsLoggerHandler
+from .modules.utils.exceptions_logger import ExceptionsLoggerHandler
 
 def raise_error(msg: str):
     raise ValueError(msg)
