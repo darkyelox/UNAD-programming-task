@@ -1,5 +1,6 @@
 from tkinter import messagebox
 import tkinter as tk
+import tkinter.font as tkFont
 from collections.abc import Callable
 
 #
@@ -12,10 +13,12 @@ def show_errors_messages(parent:tk.Tk, title:str, errors: list[str]):
 def build_window_title(master: tk.Misc, title: str, description: str):
     title_frame = tk.Frame(master=master, pady=25)
 
+    custom_font = tkFont.Font(family="Arial", size=25)
+
     title_label = tk.Label(
         master=title_frame,
         text=title,
-        font=("Arial", 25, "bold"),
+        font=custom_font,
     )
     title_label.pack(fill=tk.X)
 

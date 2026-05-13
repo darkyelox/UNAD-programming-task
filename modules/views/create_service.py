@@ -7,8 +7,6 @@ from ..database.simulated_database import db
 from .create_include import CreateIncludeDialog
 from ..utils.utils import GlobalEffects
 
-exc_logger = ExceptionsLoggerHandler('services')
-
 class ServicesDialog(tk.Toplevel):
     def __init__(
         self,
@@ -18,10 +16,9 @@ class ServicesDialog(tk.Toplevel):
         super().__init__(master, **kwargs)
         self.title('Create Service')
         self.geometry('500x400')
-        self.includes: list[ServiceInclude] = [ServiceInclude('test', 123)]
-        self.effects = GlobalEffects()
+        self.includes: list[ServiceInclude] = [] # list of service includes
+        self.effects = GlobalEffects() # registers an effect handler for this class
         self.exc_logger = ExceptionsLoggerHandler('services')
-        self.service: BaseService = None
 
         self.build_form()
 
@@ -35,6 +32,7 @@ class ServicesDialog(tk.Toplevel):
             self.includes.remove(includeToRemove)
             self.effects.exec_effect('update_grid')
 
+    # builds the service include grid.
     def build_service_includes_table(self, parent: tk.Tk):
         container_frame = tk.Frame(master=parent)
             
@@ -60,6 +58,7 @@ class ServicesDialog(tk.Toplevel):
 
         grid_frame: tk.Frame = None
 
+        # function to build the grid, it helps to rebuild when required.
         def build_grid():
             nonlocal grid_frame
 
@@ -105,8 +104,6 @@ class ServicesDialog(tk.Toplevel):
                 )
                 price_label.pack(fill=tk.X, padx=10, pady=10)
 
-                        
-
                 delete_button_icon = tk.PhotoImage(file="delete.png")
                 delete_button = tk.Button(
                     master=row_frame,
@@ -121,10 +118,11 @@ class ServicesDialog(tk.Toplevel):
                 row_frame.pack(fill=tk.X)
             grid_frame.pack(fill=tk.X)
 
+        # builds the grid the first time
         build_grid()
         container_frame.grid(row=2, column=0, columnspan=2)
 
-         # effect function to rebuild the grid.
+         # effect function to rebuild the grid when some data changes.
         def on_update():
             nonlocal grid_frame
 
@@ -136,31 +134,37 @@ class ServicesDialog(tk.Toplevel):
         self.effects.add_effect('update_grid', on_update) 
         
 
+    # opens the include dialog for registering includes
+    # it waits for the window to close and extract the created include as an object.
     def open_add_include_form(self):
         dialog = CreateIncludeDialog(master = self)
-        dialog.wait_window()
+        dialog.wait_window() # waits for the dialog to be closed (destroyed)
         if not dialog.canceled:
             self.includes.append(dialog.include)
-            self.effects.exec_effect('update_grid')
+            self.effects.exec_effect('update_grid') # triggers the effect for update the grid
 
+    # validates the service object, raises and error if the object is not correct
     def validate_service(self, service: BaseService):
         errors = service.validate_service()
 
         if(len(errors) > 0):
             show_errors_messages(parent=self, title="Failed to create service", errors=errors)
-            raise RuntimeError("There were errors in the Service form")
+            raise RuntimeError("There were errors in the Service form") # raises the error, should not close the app
 
+    # closes the dialog and mark it as canceled
     def cancel(self):
         self.canceled = True
         self.destroy()
 
+    # validates the service and save it to the simulated db
     def save(self, name: str, type: str, plan: str, duration: str):
         service: BaseService = None
 
         def onSuccess():
-            self.service = service
+            db.save_service(service)
             self.destroy()
 
+        # check the type selected and create an instance for it
         match type:
             case 'Spa':
                 service = SpaService(name)
@@ -174,6 +178,7 @@ class ServicesDialog(tk.Toplevel):
             onSuccess=lambda: onSuccess()
         )
 
+    # Builds the service form, this is a dynamic form that works depending of the type of service.
     def build_form(self):
         frame = tk.Frame(self)
         frame.rowconfigure(0, weight=1)
@@ -197,7 +202,6 @@ class ServicesDialog(tk.Toplevel):
         type_label = tk.Label(frame, text="Service Type:")
         type_label.grid(row=3, column=0, padx=10, pady=10)
 
-        
 
         type_entry_variable = tk.StringVar(frame)
         plan_entry_variable = tk.StringVar(frame)
@@ -219,6 +223,8 @@ class ServicesDialog(tk.Toplevel):
         plan_entry = tk.OptionMenu(plan_frame, plan_entry_variable, *plan_entry_options)
         plan_entry.grid(row=0, column=1)
 
+        # when the type changes shows and hides elements depending of it.
+        # those elements are required for some types of services.
         def on_type_change(value):
             duration_frame.grid_forget()
             plan_frame.grid_forget()
